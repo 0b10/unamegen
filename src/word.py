@@ -25,7 +25,7 @@ def make_get_word(sources, get_wordlist, debug):
             word_list, error = get_wordlist(source)
             if not word_list:
                 if debug:
-                    print(error)
+                    print("Connection Error:", error, "\n")
             else:
                 return word_list[randint(0, len(word_list) - 1)]
                 break
