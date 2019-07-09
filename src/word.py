@@ -16,7 +16,7 @@ def make_get_wordlist(do_cache_lookup, timeout=5):
 
     return get
 
-def make_get_word(sources, get_wordlist):
+def make_get_word(sources, get_wordlist, debug):
     assert sources and isinstance(sources, list), "The sources param must be a non-empty list"
     assert callable(get_wordlist), "The get_wordlist param should be a function"
 
@@ -24,16 +24,18 @@ def make_get_word(sources, get_wordlist):
         for source in sources:
             word_list, error = get_wordlist(source)
             if not word_list:
-                print(error)
+                if debug:
+                    print(error)
             else:
                 return word_list[randint(0, len(word_list) - 1)]
                 break
 
     return _
 
-def factory(do_cache_lookup, sources):
+def factory(do_cache_lookup, sources, debug=False):
     assert callable(do_cache_lookup), "The do_cache_lookup param should be a function"
     assert sources and isinstance(sources, list), "The sources param should be a non-empty list"
+    assert debug in [True, False], "The debug param must be a bool"
 
     get_wordlist = make_get_wordlist(do_cache_lookup)
-    return make_get_word(sources, get_wordlist)
+    return make_get_word(sources, get_wordlist, debug)
