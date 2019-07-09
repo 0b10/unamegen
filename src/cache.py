@@ -2,13 +2,13 @@ import hashlib
 import os
 import re
 
-def setup_cache(cache_dir):
+def make_setup_cache(cache_dir):
     def _():
         os.makedirs(cache_dir, exist_ok=True)
         assert os.path.isdir(cache_dir), "The cache directory was not created properly"
     return _
 
-def populate_cache(cache_dir):
+def make_populate_cache(cache_dir):
     def _(target_name, contents):
         assert target_name and isinstance(target_name, str), "The target_name param is invalid"
         assert contents and isinstance(contents, list), "The contents to cache is invalid"
@@ -24,7 +24,7 @@ def populate_cache(cache_dir):
 
     return _
 
-def should_cache(cache_dir):
+def make_should_cache(cache_dir):
     def _(target_name):
         assert target_name and isinstance(target_name, str), "The target_name param should be a non-empty string"
 
@@ -56,19 +56,19 @@ def make_get_cached(cache_dir):
         return result
     return get_cached
 
-def compose_cache(make_hash, setup_cache, populate_cache, should_cache, make_get_cached, cache_dir="/tmp/username_generator", encoding="utf-8"):
+def compose_cache(make_hash, make_setup_cache, make_populate_cache, make_should_cache, make_get_cached, cache_dir="/tmp/username_generator", encoding="utf-8"):
     assert cache_dir and isinstance(cache_dir, str), "The cache_dir should be a non-empty string"
     assert make_hash and callable(make_hash), "The make_hash param should be a function"
-    assert setup_cache and callable(setup_cache), "The setup_cache param should be a function"
-    assert populate_cache and callable(populate_cache), "The populate_cache param should be a function"
-    assert should_cache and callable(should_cache), "The should_cache param should be a function"
+    assert make_setup_cache and callable(make_setup_cache), "The make_setup_cache param should be a function"
+    assert make_populate_cache and callable(make_populate_cache), "The make_populate_cache param should be a function"
+    assert make_should_cache and callable(make_should_cache), "The make_should_cache param should be a function"
     assert make_get_cached and callable(make_get_cached), "The make_get_cached param should be a function"
     assert encoding and isinstance(encoding, str), "The encoding param should be a non-empty string"
 
     make_hash = make_hash(encoding)
-    populate_cache = populate_cache(cache_dir)
-    setup_cache = setup_cache(cache_dir)
-    should_cache = should_cache(cache_dir)
+    populate_cache = make_populate_cache(cache_dir)
+    setup_cache = make_setup_cache(cache_dir)
+    should_cache = make_should_cache(cache_dir)
     get_cached = make_get_cached(cache_dir)
 
     def do_cache_lookup_(url, get):
@@ -86,4 +86,4 @@ def compose_cache(make_hash, setup_cache, populate_cache, should_cache, make_get
     return do_cache_lookup_
 
 def factory():
-    return compose_cache(make_hash, setup_cache, populate_cache, should_cache, make_get_cached)
+    return compose_cache(make_hash, make_setup_cache, make_populate_cache, make_should_cache, make_get_cached)
