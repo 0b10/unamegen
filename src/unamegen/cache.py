@@ -56,7 +56,7 @@ def make_get_cached(cache_dir):
         return result
     return get_cached
 
-def compose_cache(make_hash, make_setup_cache, make_populate_cache, make_should_cache, make_get_cached, cache_dir="/tmp/username_generator", encoding="utf-8"):
+def compose_cache(make_hash, make_setup_cache, make_populate_cache, make_should_cache, make_get_cached, cache_dir="/tmp/unamegen", encoding="utf-8"):
     assert cache_dir and isinstance(cache_dir, str), "The cache_dir should be a non-empty string"
     assert make_hash and callable(make_hash), "The make_hash param should be a function"
     assert make_setup_cache and callable(make_setup_cache), "The make_setup_cache param should be a function"
@@ -65,7 +65,7 @@ def compose_cache(make_hash, make_setup_cache, make_populate_cache, make_should_
     assert make_get_cached and callable(make_get_cached), "The make_get_cached param should be a function"
     assert encoding and isinstance(encoding, str), "The encoding param should be a non-empty string"
 
-    make_hash = make_hash(encoding)
+    hash_this = make_hash_this(encoding)
     populate_cache = make_populate_cache(cache_dir)
     setup_cache = make_setup_cache(cache_dir)
     should_cache = make_should_cache(cache_dir)
@@ -74,7 +74,7 @@ def compose_cache(make_hash, make_setup_cache, make_populate_cache, make_should_
     def do_cache_lookup_(url, get):
         assert callable(get), "The get param should be a function"
 
-        hashed_url = make_hash(url)
+        hashed_url = hash_this(url)
         if should_cache(hashed_url):
             contents = get()
             setup_cache()
