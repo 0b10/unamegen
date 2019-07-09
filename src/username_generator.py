@@ -4,10 +4,16 @@ import hashlib
 import re
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
-def make_wordlist(cache, timeout=5, requests=requests):
+def config_get_wordlist(do_cache, timeout=5):
+    assert (isinstance(timeout, int) or isinstance(timeout, float)) and timeout > 0, "Timout should be a number > 0"
+    assert callable(do_cache), "The do_cache param should be a function"
+
     def get(url):
+        assert url and isinstance(url, str), "The url param should be a non-empty string"
+
         try:
-            return requests.get(url, timeout=timeout).text.split()
+            word_list = requests.get(url, timeout=timeout).text.split()
+            do_cache(url, word_list)
         except ( ConnectTimeout, ConnectionError, HTTPError ) as e:
             return False, e
     return get
@@ -78,12 +84,14 @@ def compose_cache(make_hash, setup_cache, populate_cache, should_cache, cache_di
     return do_cache
 
 
-# get = make_wordlist()
+do_cache = compose_cache(make_hash, setup_cache, populate_cache, should_cache)
+get_wordlist = config_get_wordlist(do_cache)
+get_wordlist("https://raw.githubusercontent.com/jeanphorn/wordlist/master/usernames.txt")
+
 # text = get("https://raw.githubusercontent.com/jeanphorn/wordlist/master/usernames.txt")
 # print(text)
 
 
 # populate_cache("baz", [1, 2, 3], setup_cache, make_hash)
 # print(should_cache("baz", make_hash))
-do_cache = compose_cache(make_hash, setup_cache, populate_cache, should_cache)
-do_cache("tesddwqiiat22", [1, 2, 3])
+# do_cache("tesddwqiiat22", [1, 2, 3])
