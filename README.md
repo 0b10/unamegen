@@ -4,7 +4,7 @@ Generate random usernames given a source.
 Sources are urls defined in config.py
 
 # Usage
-```python
+```sh
 unamegen
 unamegen --help
 unamegen --debug
