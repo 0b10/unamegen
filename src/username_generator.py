@@ -62,31 +62,52 @@ def make_hash(encoding):
 
     return _
 
-def compose_cache(make_hash, setup_cache, populate_cache, should_cache, cache_dir="/tmp/username_generator", encoding="utf-8"):
+def make_get_cached(cache_dir):
+    def get_cached(target_name):
+        target_path = os.path.join(cache_dir, target_name)
+        with open(target_path, "r") as f:
+            result = f.read().split("\n")[:-1]
+
+        assert result and isinstance(result, list), "The result from a cache read should be a non-empty list"
+        return result
+    return get_cached
+
+def compose_cache(make_hash, setup_cache, populate_cache, should_cache, make_get_cached, cache_dir="/tmp/username_generator", encoding="utf-8"):
     assert cache_dir and isinstance(cache_dir, str), "The cache_dir should be a non-empty string"
     assert make_hash and callable(make_hash), "The make_hash param should be a function"
     assert setup_cache and callable(setup_cache), "The setup_cache param should be a function"
     assert populate_cache and callable(populate_cache), "The populate_cache param should be a function"
     assert should_cache and callable(should_cache), "The should_cache param should be a function"
+    assert make_get_cached and callable(make_get_cached), "The make_get_cached param should be a function"
     assert encoding and isinstance(encoding, str), "The encoding param should be a non-empty string"
 
     make_hash = make_hash(encoding)
     populate_cache = populate_cache(cache_dir)
     setup_cache = setup_cache(cache_dir)
     should_cache = should_cache(cache_dir)
+    get_cached = make_get_cached(cache_dir)
 
-    def do_cache(url, contents):
+    def do_cache_(url, contents):
         hashed_url = make_hash(url)
         if should_cache(hashed_url):
             setup_cache()
             populate_cache(hashed_url, contents)
 
-    return do_cache
+    def get_cached_(url):
+        hashed_url = make_hash(url)
+        if should_cache(hashed_url):
+            return False # No cached
+        else:
+            return get_cached(hashed_url)
 
+    return do_cache_, get_cached_
 
-do_cache = compose_cache(make_hash, setup_cache, populate_cache, should_cache)
+url = "https://raw.githubusercontent.com/jeanphorn/wordlist/master/usernames.txt"
+
+do_cache, get_cached = compose_cache(make_hash, setup_cache, populate_cache, should_cache, make_get_cached)
 get_wordlist = config_get_wordlist(do_cache)
-get_wordlist("https://raw.githubusercontent.com/jeanphorn/wordlist/master/usernames.txt")
+get_wordlist(url)
+print(get_cached(url))
 
 # text = get("https://raw.githubusercontent.com/jeanphorn/wordlist/master/usernames.txt")
 # print(text)
