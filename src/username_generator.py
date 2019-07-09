@@ -4,18 +4,18 @@ import hashlib
 import re
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
-def config_get_wordlist(do_cache, timeout=5):
+def config_get_wordlist(do_cache_lookup, timeout=5):
     assert (isinstance(timeout, int) or isinstance(timeout, float)) and timeout > 0, "Timout should be a number > 0"
-    assert callable(do_cache), "The do_cache param should be a function"
+    assert callable(do_cache_lookup), "The do_cache_lookup param should be a function"
 
     def get(url):
         assert url and isinstance(url, str), "The url param should be a non-empty string"
 
         try:
-            word_list = requests.get(url, timeout=timeout).text.split()
-            do_cache(url, word_list)
+            return do_cache_lookup(url, lambda: requests.get(url, timeout=timeout).text.split())
         except ( ConnectTimeout, ConnectionError, HTTPError ) as e:
             return False, e
+
     return get
 
 def setup_cache(cache_dir):
@@ -87,27 +87,25 @@ def compose_cache(make_hash, setup_cache, populate_cache, should_cache, make_get
     should_cache = should_cache(cache_dir)
     get_cached = make_get_cached(cache_dir)
 
-    def do_cache_(url, contents):
+    def do_cache_lookup_(url, get):
+        assert callable(get), "The get param should be a function"
+
         hashed_url = make_hash(url)
         if should_cache(hashed_url):
+            contents = get()
             setup_cache()
             populate_cache(hashed_url, contents)
-
-    def get_cached_(url):
-        hashed_url = make_hash(url)
-        if should_cache(hashed_url):
-            return False # No cached
+            return contents
         else:
             return get_cached(hashed_url)
 
-    return do_cache_, get_cached_
+    return do_cache_lookup_
 
 url = "https://raw.githubusercontent.com/jeanphorn/wordlist/master/usernames.txt"
 
-do_cache, get_cached = compose_cache(make_hash, setup_cache, populate_cache, should_cache, make_get_cached)
-get_wordlist = config_get_wordlist(do_cache)
-get_wordlist(url)
-print(get_cached(url))
+do_cache_lookup = compose_cache(make_hash, setup_cache, populate_cache, should_cache, make_get_cached)
+get_wordlist = config_get_wordlist(do_cache_lookup)
+print(get_wordlist(url))
 
 # text = get("https://raw.githubusercontent.com/jeanphorn/wordlist/master/usernames.txt")
 # print(text)
@@ -115,4 +113,4 @@ print(get_cached(url))
 
 # populate_cache("baz", [1, 2, 3], setup_cache, make_hash)
 # print(should_cache("baz", make_hash))
-# do_cache("tesddwqiiat22", [1, 2, 3])
+# do_cache("tesddwqiiat22", [1, 2, 3])!
